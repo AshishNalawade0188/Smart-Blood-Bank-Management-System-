@@ -51,17 +51,42 @@ body.locked header,body.locked main{display:none}body:not(.locked) #login{displa
 .drop{width:44px;height:58px;background:var(--red);border-radius:50% 50% 50% 50%/65% 65% 35% 35%;display:block}
 .lbox form{grid-template-columns:1fr}.lbox .btn{width:100%;margin-top:6px}
 .err{color:var(--red);font-size:.88rem;min-height:1.3em;margin-top:10px}.hint{font-size:.82rem;color:var(--mut);margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+#login{display:flex;flex-wrap:wrap;gap:48px;justify-content:center;align-items:center}
+.lhero{color:#fff;max-width:420px}.lhero h2{font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.1;margin-bottom:14px}.lhero p{color:#b6c0d4;margin:0}.lhero ul{padding-left:18px}.lhero li{margin:8px 0;color:#d8deea}
+.lbox{animation:rise .5s ease both}@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.tabs{display:flex;background:var(--bg);border-radius:6px;padding:4px;margin-bottom:18px}
+.tabs button{flex:1;border:0;background:none;padding:9px;border-radius:4px;font:600 .95rem inherit;font-family:inherit;color:var(--mut);cursor:pointer}
+.tabs button.on{background:var(--card);color:var(--red);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.lbox form[hidden]{display:none}
+.chk{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--mut)}.chk input{width:auto}
+.btn.ghost{background:none;color:var(--ink);border:1.5px solid var(--ink)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.ghost{color:var(--tx);border-color:var(--tx)}}
+:root[data-theme="dark"] .btn.ghost{color:var(--tx);border-color:var(--tx)}
+.av{width:34px;height:34px;border-radius:50%;background:var(--gold);color:#14213d;display:inline-grid;place-items:center;font-weight:700}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:24px;opacity:0;transition:.25s;pointer-events:none;z-index:50;border:1px solid var(--gold)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.bg{transition:transform .15s}.bg:hover{transform:translateY(-3px)}
+.panel{box-shadow:0 2px 10px rgba(20,33,61,.07)}
+.stats div{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:6px;padding:12px 18px;min-width:150px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+@media(prefers-reduced-motion:reduce){.lbox{animation:none}.bg,#toast{transition:none}}
 </style>
 </head>
 <body class="locked">
-<div id="login"><div class="lbox"><span class="drop" aria-hidden="true"></span><h1>Lifeline Blood Bank</h1><p>Sign in to manage donors, stock and requests.</p>
-<form id="fl"><label>Username<input name="user" autocomplete="username" required autofocus></label>
+<div id="login"><div class="lhero"><h2>Every unit counts.</h2><p>Know what is on the shelf, who can give, and who needs it, before the call comes in.</p><ul><li>Live stock for all 8 blood groups</li><li>Compatibility matching on every request</li><li>Expiry alerts, oldest stock issued first</li></ul></div><div class="lbox"><span class="drop" aria-hidden="true"></span><h1>Lifeline Blood Bank</h1><p>Sign in to manage donors, stock and requests.</p>
+<div class="tabs"><button type="button" class="on" data-lt="fl">Sign in</button><button type="button" data-lt="fu">Create account</button></div>
+<form id="fl"><label>Username<input name="user" autocomplete="username" required></label>
 <label>Password<input name="pass" type="password" autocomplete="current-password" required></label>
-<button class="btn">Sign in</button></form>
-<div class="err" id="le" role="alert"></div><div class="hint">Demo account: admin / bank123 or staff / lifeline</div></div></div>
+<label class="chk"><input type="checkbox" name="rem" checked> Keep me signed in on this device</label>
+<button class="btn">Sign in</button><button class="btn ghost" type="button" id="demo">Use demo account</button></form>
+<form id="fu" hidden><label>Full name<input name="name" autocomplete="name" required></label>
+<label>Username<input name="user" autocomplete="username" required></label>
+<label>Password (6+ characters)<input name="pass" type="password" autocomplete="new-password" required></label>
+<button class="btn">Create account</button></form>
+<div class="err" id="le" role="alert"></div><div class="hint">Accounts are saved on this device, so you can sign in again next time. Demo: admin / bank123</div></div></div>
 <header>
- <div class="top"><div><h1>Lifeline Blood Bank</h1><p>Donors, stock and requests in one place</p></div>
- <div class="row" style="margin:0"><button class="btn alt sm" id="theme" type="button">Switch theme</button><button class="btn sm" id="logout" type="button">Sign out</button></div></div>
+ <div class="top"><div><h1>Lifeline Blood Bank</h1><p id="hello">Donors, stock and requests in one place</p></div>
+ <div class="row" style="margin:0"><button class="btn alt sm" id="theme" type="button">Switch theme</button><span class="av" id="av" aria-hidden="true"></span><button class="btn sm" id="logout" type="button">Sign out</button></div></div>
  <nav id="nav">
   <button data-t="dash" class="on">Dashboard</button><button data-t="donors">Donors</button>
   <button data-t="stock">Stock</button><button data-t="req">Requests</button><button data-t="data">Data &amp; SQL</button>
@@ -71,6 +96,8 @@ body.locked header,body.locked main{display:none}body:not(.locked) #login{displa
 <section id="dash" class="on">
  <div class="stats" id="stats"></div>
  <div class="grid" id="groups"></div>
+ <div class="panel"><h2>Stock by blood group</h2><div id="chart"></div></div>
+ <div class="panel"><h2>Who can give to a patient?</h2><label style="max-width:220px">Patient blood group<select id="cg"></select></label><div class="pills" id="cres"></div></div>
  <div class="panel"><h2>Expiring within 7 days</h2><div class="wrap" id="exp"></div></div>
 </section>
 
@@ -102,20 +129,22 @@ body.locked header,body.locked main{display:none}body:not(.locked) #login{displa
  <div class="panel"><h2>SQL query</h2>
  <pre>CREATE TABLE donors(id,name,grp,phone,last);
 CREATE TABLE inventory(id,grp,units,collected,expiry,donor);
-CREATE TABLE requests(id,patient,grp,units,hosp,status,date);</pre>
+CREATE TABLE requests(id,patient,grp,units,hosp,status,date);
+CREATE TABLE users(user,name,role,hash);</pre>
  <div class="row"><input id="q" value="SELECT * FROM donors WHERE grp = 'O-'"><button class="btn" id="runq" type="button">Run query</button></div>
  <div class="msg" id="mq"></div><div class="wrap" id="rq"></div></div>
  <div class="panel"><h2>CSV storage</h2>
- <div class="row"><select id="tbl"><option>donors</option><option>inventory</option><option>requests</option></select>
+ <div class="row"><select id="tbl"><option>donors</option><option>inventory</option><option>requests</option><option>users</option></select>
  <button class="btn alt" id="exp-csv" type="button">Show CSV</button><button class="btn" id="imp-csv" type="button">Replace table from CSV</button></div>
  <textarea id="csv" spellcheck="false" placeholder="CSV appears here. Copy it to save a backup, or paste CSV and replace the table."></textarea>
- <div class="msg" id="mc">Data is kept in this browser and survives refreshes.</div></div>
+ <div class="msg" id="mc">Accounts, donors, stock and requests are saved in this browser and survive refreshes. Copy a table's CSV into a .csv file to keep a backup file.</div></div>
 </section>
 </main>
+<div id="toast" role="status"></div>
 <script>
 const G=["A+","A-","B+","B-","AB+","AB-","O+","O-"];
 const CAN={ "A+":["A+","A-","O+","O-"],"A-":["A-","O-"],"B+":["B+","B-","O+","O-"],"B-":["B-","O-"],"AB+":G,"AB-":["A-","B-","AB-","O-"],"O+":["O+","O-"],"O-":["O-"]};
-const COLS={donors:["id","name","grp","phone","last"],inventory:["id","grp","units","collected","expiry","donor"],requests:["id","patient","grp","units","hosp","status","date"]};
+const COLS={donors:["id","name","grp","phone","last"],inventory:["id","grp","units","collected","expiry","donor"],requests:["id","patient","grp","units","hosp","status","date"],users:["user","name","role","hash"]};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const day=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
@@ -130,7 +159,12 @@ inventory:[{id:1,grp:"O-",units:4,collected:day(-35),expiry:day(7),donor:1},{id:
 {id:5,grp:"O+",units:12,collected:day(-5),expiry:day(37),donor:0}],
 requests:[{id:1,patient:"R. Deshmukh",grp:"A+",units:2,hosp:"City Care Hospital",status:"Pending",date:day(-1)}]}}
 function load(){try{DB=JSON.parse(localStorage.getItem("bloodbank")||"null")}catch(e){DB=null}if(!DB)DB=seed()}
-function save(){try{localStorage.setItem("bloodbank",JSON.stringify(DB))}catch(e){}}
+function save(){try{localStorage.setItem("bloodbank",JSON.stringify(DB))}catch(e){}toast("Saved to this browser")}
+let tt;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),1800)}
+function drawChart(){const mx=Math.max(10,...G.map(stock));
+ $("#chart").innerHTML='<svg viewBox="0 0 540 220" role="img" aria-label="Units in stock by blood group" style="width:100%;max-width:720px">'+G.map((g,i)=>{const n=stock(g),h=n/mx*140,x=14+i*65,c=n<3?"var(--red)":n<6?"var(--warn)":"var(--ok)";return`<rect x="${x}" y="${180-h}" width="46" height="${h}" rx="3" fill="${c}"/><text x="${x+23}" y="${172-h}" text-anchor="middle" font-size="14" font-weight="600" fill="var(--tx)">${n}</text><text x="${x+23}" y="204" text-anchor="middle" font-size="13" fill="var(--mut)">${g}</text>`}).join("")+'<line x1="8" x2="532" y1="180" y2="180" stroke="var(--line)"/></svg>'}
+function drawCompat(){const s=$("#cg");if(!s.options.length)s.innerHTML=G.map(g=>`<option>${g}</option>`).join("");
+ $("#cres").innerHTML=CAN[s.value].map(x=>`<span class="tag ${stock(x)?"ok":"r"}">${x}: ${stock(x)} units</span>`).join("")}
 const nid=t=>DB[t].reduce((m,r)=>Math.max(m,+r.id),0)+1;
 const live=()=>DB.inventory.filter(b=>b.expiry>=today()&&b.units>0);
 const stock=g=>live().filter(b=>b.grp===g).reduce((s,b)=>s+ +b.units,0);
@@ -140,7 +174,7 @@ function tableHTML(cols,rows,extra){
  return'<table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+(extra?'<th></th>':'')+'</tr></thead><tbody>'+
  rows.map(r=>'<tr>'+cols.map(c=>'<td>'+(c==="status"?'<span class="tag '+(r[c]==="Fulfilled"?"ok":r[c]==="Pending"?"w":"r")+'">'+esc(r[c])+'</span>':esc(r[c]))+'</td>').join('')+(extra?'<td>'+extra(r)+'</td>':'')+'</tr>').join('')+'</tbody></table>'}
 
-function render(){
+function render(){drawChart();drawCompat();
  $$("select[name=grp]").forEach(s=>{if(!s.options.length)s.innerHTML=G.map(g=>`<option>${g}</option>`).join("")});
  const tot=G.reduce((s,g)=>s+stock(g),0);
  $("#stats").innerHTML=`<div><strong>${tot}</strong>units available</div><div><strong>${DB.donors.length}</strong>registered donors</div><div><strong>${DB.requests.filter(r=>r.status==="Pending").length}</strong>pending requests</div>`;
@@ -213,15 +247,28 @@ $("#imp-csv").onclick=()=>{const t=$("#tbl").value,rows=parseCSV($("#csv").value
 $("#theme").onclick=()=>{const r=document.documentElement,d=matchMedia("(prefers-color-scheme:dark)").matches;
  const cur=r.dataset.theme||(d?"dark":"light");r.dataset.theme=cur==="dark"?"light":"dark"};
 $("#fs [name=date]").value=today();
-const USERS={admin:"bank123",staff:"lifeline"};
-function unlock(){document.body.classList.remove("locked")}
-function who(){try{return sessionStorage.getItem("bbuser")}catch(e){return null}}
-$("#fl").onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),u=f.get("user").trim().toLowerCase();
- if(USERS[u]&&USERS[u]===f.get("pass")){try{sessionStorage.setItem("bbuser",u)}catch(x){}e.target.reset();$("#le").textContent="";unlock()}
+async function hash(u,p){const s="lifeline:"+u+":"+p;try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){let h=5381;for(const c of s)h=((h<<5)+h+c.charCodeAt(0))>>>0;return"x"+h.toString(16)}}
+function getSess(){try{return localStorage.getItem("bbsession")||sessionStorage.getItem("bbsession")}catch(e){return null}}
+function setSess(u,rem){try{(rem?localStorage:sessionStorage).setItem("bbsession",u)}catch(e){}}
+function clrSess(){try{localStorage.removeItem("bbsession");sessionStorage.removeItem("bbsession")}catch(e){}}
+function unlock(u){const a=DB.users.find(x=>x.user===u)||{name:u,role:"Staff"};document.body.classList.remove("locked");
+ $("#hello").textContent="Welcome back, "+a.name+" ("+a.role+")";$("#av").textContent=a.name[0].toUpperCase();toast("Signed in as "+a.name)}
+async function initAuth(){
+ if(!DB.users||!DB.users.length){DB.users=[{user:"admin",name:"Administrator",role:"Admin",hash:await hash("admin","bank123")},{user:"staff",name:"Nurse Priya",role:"Staff",hash:await hash("staff","lifeline")}];save()}
+ const s=getSess();if(s&&DB.users.some(x=>x.user===s))unlock(s)}
+$$("[data-lt]").forEach(b=>b.onclick=()=>{$$("[data-lt]").forEach(x=>x.classList.toggle("on",x===b));$("#fl").hidden=b.dataset.lt!=="fl";$("#fu").hidden=b.dataset.lt!=="fu";$("#le").textContent=""});
+$("#demo").onclick=()=>{const f=$("#fl");f.user.value="admin";f.pass.value="bank123";f.requestSubmit()};
+$("#fl").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),u=f.get("user").trim().toLowerCase(),a=(DB.users||[]).find(x=>x.user===u);
+ if(a&&a.hash===await hash(u,f.get("pass"))){setSess(u,f.get("rem"));e.target.reset();$("#le").textContent="";unlock(u)}
  else $("#le").textContent="Username or password is incorrect. Check both and try again."};
-$("#logout").onclick=()=>{try{sessionStorage.removeItem("bbuser")}catch(x){}document.body.classList.add("locked")};
-if(who())unlock();
-load();render();runSQL();
+$("#fu").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),u=f.get("user").trim().toLowerCase(),p=f.get("pass");
+ if(!/^[a-z0-9_]{3,20}$/.test(u)){$("#le").textContent="Username must be 3 to 20 letters, numbers or underscores.";return}
+ if(p.length<6){$("#le").textContent="Password needs at least 6 characters.";return}
+ if(DB.users.some(x=>x.user===u)){$("#le").textContent="That username is taken. Pick another.";return}
+ DB.users.push({user:u,name:f.get("name").trim(),role:"Staff",hash:await hash(u,p)});save();setSess(u,true);e.target.reset();$("#le").textContent="";unlock(u)};
+$("#logout").onclick=()=>{clrSess();$("#hello").textContent="Donors, stock and requests in one place";document.body.classList.add("locked")};
+$("#cg").onchange=drawCompat;
+load();render();runSQL();initAuth();
 </script>
 </body>
 </html>
